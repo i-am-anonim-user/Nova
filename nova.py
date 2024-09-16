@@ -89,10 +89,7 @@ def process_image(image_path):
 # Funcție pentru a procesa fișierul pe baza extensiei
 def process_file(file_path):
     if file_path.lower().endswith('.pdf'):
-        if pdf_has_text(file_path):
-            return extract_text_from_pdf(file_path)
-        else:
-            return process_pdf_with_ocr(file_path)
+        return process_pdf_with_ocr(file_path)
     elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
         return process_image(file_path)
     else:
