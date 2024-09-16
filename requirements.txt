@@ -5,6 +5,8 @@ fuzzywuzzy
 python-Levenshtein
 opencv-python-headless
 torch
+fitz
+PyMuPDF
 torchvision
 easyocr
 pytesseract
