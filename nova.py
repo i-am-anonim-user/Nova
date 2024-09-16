@@ -1,12 +1,13 @@
 import os
 import streamlit as st
 import numpy as np
-import fitz  # PyMuPDF
 from PIL import Image, ImageEnhance
-import doctr
-from doctr.models import ocr_predictor
+import easyocr
 from fuzzywuzzy import fuzz
 import cv2
+
+# Initialize EasyOCR reader
+reader = easyocr.Reader(['en', 'ro'])  # Add languages as needed
 
 # Eliminarea zgomotului
 def remove_noise(img_array):
@@ -43,7 +44,7 @@ def classify_document(text):
         'passport': ['passport', 'nationality', 'country of issuance', 'pașaport', 'naționalitate', 'țara de emitere'],
         'birth_certificate': ['birth certificate', 'date of birth', 'place of birth', 'certificat de naștere', 'data nașterii', 'locul nașterii'],
         'IP': ['intellectual property', 'trademark', 'patent', 'proprietate intelectuală', 'marcă înregistrată', 'brevet'],
-    } 
+    }
 
     highest_similarity = 0
     best_match = 'other'
@@ -57,25 +58,6 @@ def classify_document(text):
 
     return best_match if highest_similarity > 70 else 'other'  # Pragul de similaritate
 
-# Funcție pentru a verifica dacă PDF-ul conține text
-def pdf_has_text(pdf_path):
-    doc = fitz.open(pdf_path)
-    for page_num in range(doc.page_count):
-        page = doc.load_page(page_num)
-        text = page.get_text("text")
-        if text.strip():
-            return True
-    return False
-
-# Funcție pentru extragerea textului din PDF fără OCR
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
-    extracted_text = ""
-    for page_num in range(doc.page_count):
-        page = doc.load_page(page_num)
-        extracted_text += page.get_text("text")
-    return extracted_text
-
 # Funcție pentru procesarea unui PDF folosind OCR
 def process_pdf_with_ocr(pdf_path):
     doc = fitz.open(pdf_path)
@@ -86,12 +68,11 @@ def process_pdf_with_ocr(pdf_path):
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         img = enhance_contrast(img)
         img_array = np.array(img)
-        model = ocr_predictor(pretrained=True)
-        result = model([img_array])
-        for page in result.pages:
-            for block in page.blocks:
-                for line in block.lines:
-                    detected_text += " ".join([word.value for word in line.words]) + "\n"
+        img_array = remove_noise(img_array)
+        img_array = upscale_image(img_array)
+        result = reader.readtext(img_array)
+        for (bbox, text, prob) in result:
+            detected_text += text + "\n"
     return detected_text
 
 # Funcție pentru procesarea unei imagini
@@ -100,14 +81,11 @@ def process_image(image_path):
     img = enhance_contrast(img, factor=2.0)
     img_array = np.array(img)
     img_array = remove_noise(img_array)
-    img_array = upscale_image(img_array, scale=2)
-    model = ocr_predictor(pretrained=True)
-    result = model([img_array])
+    img_array = upscale_image(img_array)
+    result = reader.readtext(img_array)
     detected_text = ""
-    for page in result.pages:
-        for block in page.blocks:
-            for line in block.lines:
-                detected_text += " ".join([word.value for word in line.words]) + "\n"
+    for (bbox, text, prob) in result:
+        detected_text += text + "\n"
     return detected_text
 
 # Funcție pentru a procesa fișierul pe baza extensiei
@@ -125,16 +103,16 @@ def process_file(file_path):
 # Interfața de utilizator cu Streamlit
 def main():
     st.title("Document Processor")
-    
+
     choice = st.selectbox("Selectați opțiunea:", ["Procesați un fișier", "Procesați un folder"])
-    
+
     if choice == "Procesați un fișier":
         file = st.file_uploader("Încărcați un fișier (imagine sau PDF):", type=['pdf', 'png', 'jpg', 'jpeg', 'bmp', 'tiff'])
         if file is not None:
             file_path = f"temp_{file.name}"
             with open(file_path, "wb") as f:
                 f.write(file.read())
-                
+
             try:
                 detected_text = process_file(file_path)
                 st.subheader("Text detectat:")
@@ -151,7 +129,7 @@ def main():
                 st.error(f"A apărut o eroare: {e}")
             finally:
                 os.remove(file_path)
-    
+
     elif choice == "Procesați un folder":
         folder_path = st.text_input("Introduceți calea către folder:")
         if folder_path and os.path.isdir(folder_path):
