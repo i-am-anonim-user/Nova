@@ -3,6 +3,7 @@ numpy
 Pillow
 torch
 fuzzywuzzy
+keras
 PyMuPDF
 tensorflow
 opencv-python-headless
