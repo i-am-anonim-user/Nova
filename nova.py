@@ -2,12 +2,13 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageEnhance
-import easyocr
+import pytesseract
 from fuzzywuzzy import fuzz
 import cv2
+import fitz  # PyMuPDF
 
-# Initialize EasyOCR reader
-reader = easyocr.Reader(['en', 'ro'])  # Add languages as needed
+# Setează calea către executabilul Tesseract dacă este necesar
+# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows
 
 # Eliminarea zgomotului
 def remove_noise(img_array):
@@ -70,9 +71,8 @@ def process_pdf_with_ocr(pdf_path):
         img_array = np.array(img)
         img_array = remove_noise(img_array)
         img_array = upscale_image(img_array)
-        result = reader.readtext(img_array)
-        for (bbox, text, prob) in result:
-            detected_text += text + "\n"
+        text = pytesseract.image_to_string(img_array)
+        detected_text += text + "\n"
     return detected_text
 
 # Funcție pentru procesarea unei imagini
@@ -82,10 +82,8 @@ def process_image(image_path):
     img_array = np.array(img)
     img_array = remove_noise(img_array)
     img_array = upscale_image(img_array)
-    result = reader.readtext(img_array)
-    detected_text = ""
-    for (bbox, text, prob) in result:
-        detected_text += text + "\n"
+    text = pytesseract.image_to_string(img_array)
+    detected_text = text
     return detected_text
 
 # Funcție pentru a procesa fișierul pe baza extensiei
