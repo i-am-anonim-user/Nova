@@ -2,9 +2,10 @@ streamlit
 numpy
 Pillow
 fuzzywuzzy
-python-Levenshtein
 opencv-python-headless
+pytesseract
+doctr.io
 git
-https://github.com/doctr-team/doctr.git
 torch
+doctr
 torchvision
