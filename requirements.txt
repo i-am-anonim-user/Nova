@@ -4,9 +4,8 @@ Pillow
 fuzzywuzzy
 python-Levenshtein
 opencv-python-headless
-pytorch
 torch
-doctr
 torchvision
 easyocr
 pytesseract
+doctr
