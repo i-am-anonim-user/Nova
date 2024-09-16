@@ -8,4 +8,5 @@ torch
 torchvision
 easyocr
 pytesseract
+python-Levenshtein
 doctr
