@@ -1,0 +1,9 @@
+streamlit
+numpy
+PyMuPDF
+Pillow
+doctr
+fuzzywuzzy
+opencv-python-headless
+tqdm
+python-Levenshtein
