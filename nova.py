@@ -2,64 +2,32 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageEnhance
-import pytesseract
-from fuzzywuzzy import fuzz
 import cv2
-import fitz  # PyMuPDF
+from fuzzywuzzy import fuzz
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import img_to_array
 
-# Setează calea către executabilul Tesseract dacă este necesar
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows
+# Load the pre-trained CRNN model
+model = load_model('crnn_model.h5')
 
-# Eliminarea zgomotului
-def remove_noise(img_array):
-    return cv2.fastNlMeansDenoisingColored(img_array, None, 10, 10, 7, 21)
+# Function for preprocessing image for CRNN model
+def preprocess_image(img_array):
+    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)  # Convert to grayscale
+    img_array = cv2.resize(img_array, (128, 32))  # Resize to model input size
+    img_array = img_array / 255.0  # Normalize
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    img_array = np.expand_dims(img_array, axis=-1)  # Add channel dimension
+    return img_array
 
-# Funcție pentru ajustarea contrastului
-def enhance_contrast(img, factor=2.0):
-    enhancer = ImageEnhance.Contrast(img)
-    return enhancer.enhance(factor)
+# Dummy function to simulate text prediction from CRNN model
+def predict_text_from_image(img_array):
+    preprocessed_img = preprocess_image(img_array)
+    predictions = model.predict(preprocessed_img)
+    # Dummy implementation: replace with actual decoding logic
+    detected_text = "Detected text"  # This should be replaced with actual decoding
+    return detected_text
 
-# Funcție pentru transformarea în tonuri de gri
-def convert_to_grayscale(img_array):
-    return cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-
-# Funcție pentru binarizare
-def binarize_image(img_array):
-    _, img_bin = cv2.threshold(img_array, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return img_bin
-
-# Funcție pentru mărirea imaginii
-def upscale_image(img_array, scale=2):
-    width = int(img_array.shape[1] * scale)
-    height = int(img_array.shape[0] * scale)
-    dim = (width, height)
-    return cv2.resize(img_array, dim, interpolation=cv2.INTER_LINEAR)
-
-# Funcție pentru clasificarea documentelor cu similaritate text
-def classify_document(text):
-    classifications = {
-        'contract': ['contract', 'parties', 'agreement', 'terms', 'părți', 'acord', 'termeni'],
-        'NDA': ['non-disclosure', 'confidentiality', 'NDA', 'acord de confidențialitate', 'ne-divulgare'],
-        'GDPR': ['data protection', 'GDPR', 'personal data', 'protecția datelor', 'date personale'],
-        'extract': ['bank statement', 'account summary', 'balance', 'extras de cont', 'sumar de cont', 'sold'],
-        'passport': ['passport', 'nationality', 'country of issuance', 'pașaport', 'naționalitate', 'țara de emitere'],
-        'birth_certificate': ['birth certificate', 'date of birth', 'place of birth', 'certificat de naștere', 'data nașterii', 'locul nașterii'],
-        'IP': ['intellectual property', 'trademark', 'patent', 'proprietate intelectuală', 'marcă înregistrată', 'brevet'],
-    }
-
-    highest_similarity = 0
-    best_match = 'other'
-
-    for category, keywords in classifications.items():
-        for keyword in keywords:
-            similarity = fuzz.partial_ratio(keyword.lower(), text.lower())
-            if similarity > highest_similarity:
-                highest_similarity = similarity
-                best_match = category
-
-    return best_match if highest_similarity > 70 else 'other'  # Pragul de similaritate
-
-# Funcție pentru procesarea unui PDF folosind OCR
+# Function for processing PDF using OCR with CRNN
 def process_pdf_with_ocr(pdf_path):
     doc = fitz.open(pdf_path)
     detected_text = ""
@@ -71,31 +39,32 @@ def process_pdf_with_ocr(pdf_path):
         img_array = np.array(img)
         img_array = remove_noise(img_array)
         img_array = upscale_image(img_array)
-        text = pytesseract.image_to_string(img_array)
-        detected_text += text + "\n"
+        detected_text += predict_text_from_image(img_array) + "\n"
     return detected_text
 
-# Funcție pentru procesarea unei imagini
+# Function for processing image with CRNN
 def process_image(image_path):
     img = Image.open(image_path).convert("RGB")
     img = enhance_contrast(img, factor=2.0)
     img_array = np.array(img)
     img_array = remove_noise(img_array)
     img_array = upscale_image(img_array)
-    text = pytesseract.image_to_string(img_array)
-    detected_text = text
+    detected_text = predict_text_from_image(img_array)
     return detected_text
 
-# Funcție pentru a procesa fișierul pe baza extensiei
+# Function for file processing based on extension
 def process_file(file_path):
     if file_path.lower().endswith('.pdf'):
-        return process_pdf_with_ocr(file_path)
+        if pdf_has_text(file_path):
+            return extract_text_from_pdf(file_path)
+        else:
+            return process_pdf_with_ocr(file_path)
     elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
         return process_image(file_path)
     else:
         raise ValueError("Format fișier neacceptat. Acceptăm doar PDF-uri și imagini.")
 
-# Interfața de utilizator cu Streamlit
+# Streamlit UI
 def main():
     st.title("Document Processor")
 
