@@ -1,9 +1,8 @@
-streamlit
-numpy
-PyMuPDF
-Pillow
-doctr
-fuzzywuzzy
-opencv-python-headless
-tqdm
-python-Levenshtein
+streamlit==1.38.0
+numpy==2.1.1
+Pillow==10.4.0
+PyMuPDF==1.22.2
+doctr==0.5.0
+fuzzywuzzy==0.18.0
+python-opencv==4.8.0.76
+pytesseract==0.4.10
