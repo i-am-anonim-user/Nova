@@ -1,11 +1,10 @@
 streamlit
+pip
 numpy
 Pillow
 fuzzywuzzy
 opencv-python-headless
-pytesseract
-doctr.io
 git
 torch
-doctr
+doctr.io
 torchvision
