@@ -3,5 +3,6 @@ numpy
 Pillow
 torch
 fuzzywuzzy
+PyMuPDF
 opencv-python-headless
 pytesseract
