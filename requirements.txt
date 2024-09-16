@@ -4,6 +4,7 @@ Pillow
 torch
 fuzzywuzzy
 PyMuPDF
+tensorflow
 opencv-python-headless
 pytesseract
-tesseract-ocr
+
